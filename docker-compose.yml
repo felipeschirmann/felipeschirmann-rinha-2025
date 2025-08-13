@@ -1,0 +1,57 @@
+services:
+  api01: &api-template
+    image: felipeschirmann/rinha-backend-2025:15.2.9
+    hostname: api01
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_REDIS_HOST: redis
+      LOGGING_LEVEL_ROOT: OFF
+    networks:
+      - payment-processor
+    deploy:
+      resources:
+        limits:
+          cpus: "0.64"
+          memory: "160M"
+
+  api02:
+    <<: *api-template
+    hostname: api02
+
+  nginx:
+    image: openresty/openresty:1.21.4.1-alpine
+    sysctls:
+      net.core.somaxconn: 65535
+      net.ipv4.tcp_tw_reuse: "1"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./enqueue_payment.lua:/usr/local/openresty/nginx/scripts/enqueue_payment.lua:ro
+    ports:
+      - "9999:9999"
+    networks:
+      - payment-processor
+    depends_on:
+      - api01
+      - api02
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: "20M"
+
+  redis:
+    image: redis:7.2-alpine
+    hostname: redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - payment-processor
+    deploy:
+      resources:
+        limits:
+          cpus: "0.12"
+          memory: "10M"
+networks:
+  payment-processor:
+    external: true

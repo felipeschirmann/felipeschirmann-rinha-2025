@@ -1,0 +1,49 @@
+services:
+  # O Redis continua sendo nossa base de dados e fila
+  redis:
+    image: redis:7.2
+    container_name: rinha-redis-dev
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      # Mapeia nosso redis.conf para desligar os snapshots RDB
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    networks:
+      - rinha-dev-net
+
+  # NOVO: O Ingestor OpenResty/Nginx
+  # Ele receberá as chamadas na porta 9999 e enfileirará no Redis
+  ingestor:
+    image: openresty/openresty:1.21.4.1-alpine
+    container_name: rinha-ingestor-dev
+    volumes:
+      # Mapeia a configuração do Nginx e o script Lua
+      - ./nginx.dev.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./enqueue_payment.dev.lua:/usr/local/openresty/nginx/scripts/enqueue_payment.dev.lua:ro
+    ports:
+      # Expõe a porta principal da Rinha para o seu localhost
+      - "9999:9999"
+    networks:
+      - rinha-dev-net
+    depends_on:
+      - redis
+
+#  net-spy:
+#    image: nicolaka/netshoot
+#    container_name: rinha-net-spy-dev
+#    # Este comando é um truque para manter o container rodando para sempre
+#    # para que possamos entrar nele a qualquer momento.
+#    command: tail -f /dev/null
+#    networks:
+#      # A chave: ele precisa estar na mesma rede para "enxergar" os outros.
+#      - rinha-dev-net
+#    depends_on:
+#      - redis
+#      - ingestor
+
+
+# Definimos uma rede para que o ingestor consiga falar com o redis
+networks:
+  rinha-dev-net:
+    driver: bridge
