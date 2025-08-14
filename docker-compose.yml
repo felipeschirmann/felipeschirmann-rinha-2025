@@ -9,7 +9,9 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       LOGGING_LEVEL_ROOT: OFF
-      RINHA_STRATEGY_DECISION_PERIOD_MS: 500
+      RINHA_QUEUE_MAX_SIZE: 50000
+      RINHA_QUEUE_FALLBACK_TRIGGER_SIZE: 35000
+      RINHA_STRATEGY_DECISION_PERIOD_MS: 1000
       RINHA_CB_DEFAULT_WAIT_DURATION: 1s
       RINHA_PROCESSOR_HEALTH_DATA_MAX_AGE_MS: 4500
     networks:
@@ -20,7 +22,7 @@ services:
       resources:
         limits:
           cpus: "0.64"
-          memory: "130M"
+          memory: "150M"
 
   api02:
     <<: *api-template
@@ -45,7 +47,7 @@ services:
       resources:
         limits:
           cpus: "0.10"
-          memory: "60M"
+          memory: "20M"
 
   redis:
     image: redis:7.2-alpine
