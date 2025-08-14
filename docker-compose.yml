@@ -1,18 +1,24 @@
 services:
   api01: &api-template
-    image: felipeschirmann/rinha-backend-2025:15.2.9
+    image: felipeschirmann/rinha-backend-2025:17.0.2
     hostname: api01
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      PROCESSOR_DEFAULT_URL: http://payment-processor-default:8080
+      PROCESSOR_FALLBACK_URL: http://payment-processor-fallback:8080
+      SPRING_PROFILES_ACTIVE: test
       SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       LOGGING_LEVEL_ROOT: OFF
     networks:
+      - rinha-interna
       - payment-processor
+    depends_on:
+      - redis
     deploy:
       resources:
         limits:
           cpus: "0.64"
-          memory: "160M"
+          memory: "130M"
 
   api02:
     <<: *api-template
@@ -29,6 +35,7 @@ services:
     ports:
       - "9999:9999"
     networks:
+      - rinha-interna
       - payment-processor
     depends_on:
       - api01
@@ -37,7 +44,7 @@ services:
       resources:
         limits:
           cpus: "0.10"
-          memory: "20M"
+          memory: "60M"
 
   redis:
     image: redis:7.2-alpine
@@ -46,12 +53,14 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
-      - payment-processor
+      - rinha-interna
     deploy:
       resources:
         limits:
           cpus: "0.12"
-          memory: "10M"
+          memory: "30M"
 networks:
+  rinha-interna:
+    driver: bridge
   payment-processor:
     external: true
