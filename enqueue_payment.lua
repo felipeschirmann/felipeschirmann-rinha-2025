@@ -41,4 +41,5 @@ if not ok then
 end
 
 -- Responde ao cliente com sucesso
-return ngx.exit(202)
+ngx.status = 202
+ngx.say("Accepted")

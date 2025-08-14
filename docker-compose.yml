@@ -1,6 +1,6 @@
 services:
   api01: &api-template
-    image: felipeschirmann/rinha-backend-2025:17.0.2
+    image: felipeschirmann/rinha-backend-2025:17.0.3
     hostname: api01
     environment:
       PROCESSOR_DEFAULT_URL: http://payment-processor-default:8080
@@ -9,8 +9,10 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       LOGGING_LEVEL_ROOT: OFF
+      RINHA_STRATEGY_DECISION_PERIOD_MS: 500
+      RINHA_CB_DEFAULT_WAIT_DURATION: 1s
+      RINHA_PROCESSOR_HEALTH_DATA_MAX_AGE_MS: 4500
     networks:
-      - rinha-interna
       - payment-processor
     depends_on:
       - redis
@@ -30,12 +32,11 @@ services:
       net.core.somaxconn: 65535
       net.ipv4.tcp_tw_reuse: "1"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
       - ./enqueue_payment.lua:/usr/local/openresty/nginx/scripts/enqueue_payment.lua:ro
     ports:
       - "9999:9999"
     networks:
-      - rinha-interna
       - payment-processor
     depends_on:
       - api01
@@ -53,14 +54,12 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
-      - rinha-interna
+      - payment-processor
     deploy:
       resources:
         limits:
           cpus: "0.12"
           memory: "30M"
 networks:
-  rinha-interna:
-    driver: bridge
   payment-processor:
     external: true
